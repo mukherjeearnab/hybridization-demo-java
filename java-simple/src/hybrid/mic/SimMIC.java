@@ -1,10 +1,10 @@
-package hybrid;
+package hybrid.mic;
 
 /**
  * Identity card of a SIMULATION model (UML diagram sim.puml).
  *
  * A simulation model is built from physical laws (equations). On top of what every ExecMIC has
- * (name, ports, parameters), it also records:
+ * (name, ports, internal variables, parameters), it also records:
  *   - the modelling language the model was written in (here: Modelica),
  *   - the equation(s) it solves,
  *   - the numerical solver used to compute the solution over time.
@@ -23,10 +23,10 @@ public abstract class SimMIC extends ExecMIC {
         this.solver = solver;
     }
 
-    /** Prints everything ExecMIC prints, plus the simulation-specific information. */
+    /** Adds the simulation-specific information to the printed identity card. */
     @Override
-    public void print() {
-        super.print();
-        System.out.println("  " + language + " equation: " + equation + "  (solver: " + solver + ")");
+    protected void printSpecifics() {
+        System.out.println("  Language: " + language + ", solver: " + solver);
+        System.out.println("  Equation: " + equation);
     }
 }

@@ -1,5 +1,7 @@
 package hybrid;
 
+import hybrid.models.HybridModel;
+
 /**
  * Entry point of the program: creates the hybrid model, prints the identity cards of all models,
  * then simulates 300 seconds and prints a table of the results.

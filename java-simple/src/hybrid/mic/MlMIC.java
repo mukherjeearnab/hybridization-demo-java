@@ -1,13 +1,15 @@
-package hybrid;
+package hybrid.mic;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import hybrid.parameters.LearnedParameter;
 
 /**
  * Identity card of a MACHINE-LEARNING model (UML diagram ml.puml).
  *
  * An ML model is learned from data instead of being written from physical laws. On top of what
- * every ExecMIC has (name, ports, parameters), it also records:
+ * every ExecMIC has (name, ports, internal variables, parameters), it also records:
  *   - the framework it was built with (here: PyTorch),
  *   - its architecture: the ordered list of layers.
  *
@@ -16,7 +18,7 @@ import java.util.List;
  * output itself (see forward()). No PyTorch is needed to run it.
  */
 public abstract class MlMIC extends ExecMIC {
-    public final String framework;                        // e.g. "PyTorch"
+    public final String framework;                             // e.g. "PyTorch"
     public final List<Layer> architecture = new ArrayList<>(); // layers, in execution order
 
     protected MlMIC(String name, String description, String framework) {
@@ -29,6 +31,12 @@ public abstract class MlMIC extends ExecMIC {
         architecture.add(new Layer(name, type));
     }
 
+    /** Looks up a learned parameter (weight or bias) by name. */
+    protected LearnedParameter learned(String parameterName) {
+        // The cast "(LearnedParameter)" tells Java that we know this parameter is a LearnedParameter.
+        return (LearnedParameter) parameter(parameterName);
+    }
+
     /**
      * The "forward pass": sends the input vector x through all layers, one after another,
      * and returns the final output vector.
@@ -38,7 +46,7 @@ public abstract class MlMIC extends ExecMIC {
             switch (layer.type) {
                 case "Linear":
                     // Look up this layer's weights and biases among the MIC parameters by name.
-                    x = linear(x, parameter(layer.name + ".weight"), parameter(layer.name + ".bias"));
+                    x = linear(x, learned(layer.name + ".weight"), learned(layer.name + ".bias"));
                     break;
                 case "Tanh":
                     // Apply tanh to every element (an "activation function").
@@ -59,9 +67,9 @@ public abstract class MlMIC extends ExecMIC {
      * W has shape [out, in]: one row per output neuron, one column per input value.
      * Each output y[o] is: bias b[o] + sum over i of W[o][i] * x[i].
      */
-    private static double[] linear(double[] x, Parameter weight, Parameter bias) {
-        int out = weight.shape[0]; // number of output neurons
-        int in = weight.shape[1];  // number of inputs
+    private static double[] linear(double[] x, LearnedParameter weight, LearnedParameter bias) {
+        int out = weight.dataType.shape[0]; // number of output neurons
+        int in = weight.dataType.shape[1];  // number of inputs
         double[] y = new double[out];
         for (int o = 0; o < out; o++) {
             y[o] = bias.values[o];
@@ -73,10 +81,10 @@ public abstract class MlMIC extends ExecMIC {
         return y;
     }
 
-    /** Prints everything ExecMIC prints, plus the ML-specific information. */
+    /** Adds the ML-specific information to the printed identity card. */
     @Override
-    public void print() {
-        super.print();
-        System.out.println("  " + framework + " architecture: " + architecture);
+    protected void printSpecifics() {
+        System.out.println("  Framework: " + framework);
+        System.out.println("  Architecture: " + architecture);
     }
 }

@@ -1,4 +1,12 @@
-package hybrid;
+package hybrid.models;
+
+import hybrid.description.DataType;
+import hybrid.description.Uncertainty;
+import hybrid.description.Unit;
+import hybrid.mic.ExecMIC;
+import hybrid.variables.InternalVariable;
+import hybrid.variables.Port;
+import hybrid.variables.Variable;
 
 /**
  * The HYBRID model: combines the physics model and the ML model.
@@ -23,10 +31,24 @@ public class HybridModel extends ExecMIC {
     public HybridModel() {
         super("HybridThermalModel", "Modelica thermal model corrected by a PyTorch MLP");
 
-        // The hybrid model's own ports (as seen from outside: the ML model is an internal detail).
-        port("power", "W", Variable.InOut.IN);
-        port("ambient_temp", "degC", Variable.InOut.IN);
-        port("temp_pred", "degC", Variable.InOut.OUT);
+        // The hybrid model's own ports, as seen from outside (the two sub-models are internal details).
+        Port inputs = port("inputs", "Operating conditions");
+        inputs.add(new Variable("power", "Applied heater power",
+                Variable.InOut.IN, DataType.REAL64, Unit.WATT)).quantityKind = "Power";
+        inputs.add(new Variable("ambient_temp", "Ambient temperature",
+                Variable.InOut.IN, DataType.REAL64, Unit.DEG_C)).quantityKind = "Temperature";
+
+        Port outputs = port("outputs", "Prediction");
+        Variable tempPred = outputs.add(new Variable("temp_pred", "Hybrid temperature prediction",
+                Variable.InOut.OUT, DataType.REAL64, Unit.DEG_C));
+        tempPred.quantityKind = "Temperature";
+        tempPred.uncertainty = new Uncertainty("normal", 0.3, "dominated by the ML residual error");
+
+        // The arrows between the sub-models in the diagram above are the hybrid's internal variables.
+        internal(new InternalVariable("temp_sim", "ThermalModel.temperature -> ResidualMLP.temperature_sim",
+                DataType.REAL64, Unit.DEG_C)).quantityKind = "Temperature";
+        internal(new InternalVariable("residual_correction", "ResidualMLP.predicted_residual -> sum",
+                DataType.REAL64, Unit.KELVIN)).quantityKind = "TemperatureDifference";
     }
 
     /**

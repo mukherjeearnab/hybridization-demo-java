@@ -1,4 +1,4 @@
-package hybrid;
+package hybrid.mic;
 
 /**
  * One step ("layer") of a neural network. A network is just a list of layers applied one after another.
