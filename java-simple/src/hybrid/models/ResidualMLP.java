@@ -9,7 +9,6 @@ import hybrid.parameters.Hyperparameter;
 import hybrid.parameters.LearnedParameter;
 import hybrid.parameters.NonTrainableState;
 import hybrid.variables.InternalVariable;
-import hybrid.variables.MlVariable;
 import hybrid.variables.Port;
 import hybrid.variables.Variable;
 
@@ -38,27 +37,27 @@ public class ResidualMLP extends MlMIC {
         // 2. Declare the ports. The order of the input features is the order the network expects.
         //    The validity domain of each feature is its "training envelope": the range seen in the training data.
         Port features = port("features", "Input features of the network");
-        MlVariable tSim = features.add(new MlVariable("temperature_sim", "Temperature simulated by the physics model",
-                Variable.InOut.IN, MlVariable.Role.inputFeature, DataType.REAL32, Unit.DEG_C));
-        tSim.quantityKind = "Temperature";
-        tSim.validityDomain = new RangeDomain(0.0, 1100.0, "training envelope", "min/max of training data");
+        features.add(new Variable("temperature_sim", "Temperature simulated by the physics model",
+                Variable.InOut.IN, Variable.Role.inputFeature, DataType.REAL32, Unit.DEG_C)
+                .withQuantityKind("Temperature")
+                .withValidity(new RangeDomain(0.0, 1100.0, "training envelope", "min/max of training data")));
 
-        MlVariable power = features.add(new MlVariable("power", "Applied heater power",
-                Variable.InOut.IN, MlVariable.Role.inputFeature, DataType.REAL32, Unit.WATT));
-        power.quantityKind = "Power";
-        power.validityDomain = new RangeDomain(0.0, 250.0, "training envelope", "min/max of training data");
+        features.add(new Variable("power", "Applied heater power",
+                Variable.InOut.IN, Variable.Role.inputFeature, DataType.REAL32, Unit.WATT)
+                .withQuantityKind("Power")
+                .withValidity(new RangeDomain(0.0, 250.0, "training envelope", "min/max of training data")));
 
-        MlVariable ambient = features.add(new MlVariable("ambient", "Ambient temperature",
-                Variable.InOut.IN, MlVariable.Role.inputFeature, DataType.REAL32, Unit.DEG_C));
-        ambient.quantityKind = "Temperature";
-        ambient.validityDomain = new RangeDomain(10.0, 35.0, "training envelope", "min/max of training data");
+        features.add(new Variable("ambient", "Ambient temperature",
+                Variable.InOut.IN, Variable.Role.inputFeature, DataType.REAL32, Unit.DEG_C)
+                .withQuantityKind("Temperature")
+                .withValidity(new RangeDomain(10.0, 35.0, "training envelope", "min/max of training data")));
 
         Port prediction = port("prediction", "Output of the network");
-        MlVariable residual = prediction.add(new MlVariable("predicted_residual",
+        prediction.add(new Variable("predicted_residual",
                 "Predicted error: measured minus simulated temperature",
-                Variable.InOut.OUT, MlVariable.Role.target, DataType.REAL32, Unit.KELVIN));
-        residual.quantityKind = "TemperatureDifference";
-        residual.uncertainty = new Uncertainty("normal", 0.3, "RMSE on the test dataset");
+                Variable.InOut.OUT, Variable.Role.target, DataType.REAL32, Unit.KELVIN)
+                .withQuantityKind("TemperatureDifference")
+                .withUncertainty(new Uncertainty("normal", 0.3, "RMSE on the test dataset")));
 
         // 3. Declare the architecture, named like PyTorch's nn.Sequential: net.0, net.1, net.2
         layer("net.0", "Linear"); // 3 inputs -> 4 hidden neurons
@@ -66,19 +65,21 @@ public class ResidualMLP extends MlMIC {
         layer("net.2", "Linear"); // 4 hidden neurons -> 1 output
 
         // 4. Internal variable: the hidden layer's output. tanh keeps it between -1 and 1.
-        InternalVariable hidden = internal(new InternalVariable("net.1.out", "Hidden-layer activations",
-                DataType.tensor(4), Unit.ONE));
-        hidden.validityDomain = new RangeDomain(-1.0, 1.0, "numerical", "range of tanh");
+        internal(new InternalVariable("net.1.out", "Hidden-layer activations",
+                DataType.tensor(4), Unit.ONE)
+                .withValidity(new RangeDomain(-1.0, 1.0, "numerical", "range of tanh")));
 
         // 5. Hyperparameters: choices made before training.
         parameter(new Hyperparameter("hidden_size", "Neurons in the hidden layer",
-                Hyperparameter.Category.architecture, "4")).tuningMethod = "manual";
+                Hyperparameter.Category.architecture, "4")
+                .withTuningMethod("manual"));
         parameter(new Hyperparameter("activation", "Activation function",
-                Hyperparameter.Category.architecture, "tanh")).tuningMethod = "manual";
-        Hyperparameter lr = parameter(new Hyperparameter("learning_rate", "Step size of the Adam optimiser",
-                Hyperparameter.Category.optimizer, "0.001"));
-        lr.isTuned = true;
-        lr.tuningMethod = "randomSearch";
+                Hyperparameter.Category.architecture, "tanh")
+                .withTuningMethod("manual"));
+        parameter(new Hyperparameter("learning_rate", "Step size of the Adam optimiser",
+                Hyperparameter.Category.optimizer, "0.001")
+                .withTuned(true)
+                .withTuningMethod("randomSearch"));
 
         // 6. Learned weights and biases. Their names "<layer>.weight" / "<layer>.bias" link them to the
         //    layers above. Weight shape is [outputs, inputs]: here 4 rows (neurons) x 3 columns (features).
@@ -100,16 +101,17 @@ public class ResidualMLP extends MlMIC {
         //    Neural networks work best with inputs around 0, so each feature is rescaled:
         //        x_norm = (x - mean) / std
         parameter(new NonTrainableState("feature_mean", "Mean of each feature in the training data",
-                NonTrainableState.Kind.buffer, new double[]{150.0, 100.0, 20.0})).storageRef = "normalization.json#mean";
+                NonTrainableState.Kind.buffer, new double[]{150.0, 100.0, 20.0})
+                .withStorageRef("normalization.json#mean"));
         parameter(new NonTrainableState("feature_std", "Standard deviation of each feature in the training data",
-                NonTrainableState.Kind.buffer, new double[]{250.0, 60.0, 5.0})).storageRef = "normalization.json#std";
+                NonTrainableState.Kind.buffer, new double[]{250.0, 60.0, 5.0})
+                .withStorageRef("normalization.json#std"));
     }
 
     /** Adds a learned parameter together with the information shared by all of them. */
     private void learnedParameter(LearnedParameter p) {
-        p.initializer = "PyTorch default (uniform)";
-        p.storageRef = CHECKPOINT + "#" + p.name;
-        parameter(p);
+        parameter(p.withInitializer("PyTorch default (uniform)")
+                   .withStorageRef(CHECKPOINT + "#" + p.name));
     }
 
     /**

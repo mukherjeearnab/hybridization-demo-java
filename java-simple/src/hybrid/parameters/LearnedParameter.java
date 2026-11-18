@@ -35,6 +35,23 @@ public class LearnedParameter extends Parameter {
         this.values = values;
     }
 
+    // Chained setters for the optional fields (call them BEFORE the inherited with-methods,
+    // because those return a general type).
+    public LearnedParameter withInitializer(String initializer) {
+        this.initializer = initializer;
+        return this;
+    }
+
+    public LearnedParameter withFrozen(boolean frozen) {
+        this.frozen = frozen;
+        return this;
+    }
+
+    public LearnedParameter withStorageRef(String storageRef) {
+        this.storageRef = storageRef;
+        return this;
+    }
+
     @Override
     protected List<String> details() {
         List<String> d = super.details();

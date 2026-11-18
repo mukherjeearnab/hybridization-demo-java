@@ -1,15 +1,29 @@
 package hybrid;
 
+import hybrid.mic.MicJson;
 import hybrid.models.HybridModel;
 
 /**
  * Entry point of the program: creates the hybrid model, prints the identity cards of all models,
- * then simulates 300 seconds and prints a table of the results.
+ * then simulates 300 seconds and prints a table of the results. Pass --json to export the cards
+ * instead of running the simulation.
  */
 public class Main {
     public static void main(String[] args) {
+        boolean exportJson = args.length == 1 && "--json".equals(args[0]);
+        if (args.length != 0 && !exportJson) {
+            System.err.println("Usage: java -cp build hybrid.Main [--json]");
+            System.exit(2);
+            return;
+        }
+
         // Creating the hybrid model also creates its two sub-models (physics and ML).
         HybridModel hybrid = new HybridModel();
+
+        if (exportJson) {
+            System.out.print(MicJson.toJson(hybrid));
+            return;
+        }
 
         // Show the "ID cards" of all three models.
         System.out.println("=== Model Identity Cards ===");

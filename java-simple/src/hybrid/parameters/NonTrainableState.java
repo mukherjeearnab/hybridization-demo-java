@@ -26,6 +26,12 @@ public class NonTrainableState extends Parameter {
         this.values = values;
     }
 
+    /** Chained setter: where the values are stored (optional). */
+    public NonTrainableState withStorageRef(String storageRef) {
+        this.storageRef = storageRef;
+        return this;
+    }
+
     @Override
     protected List<String> details() {
         List<String> d = super.details();

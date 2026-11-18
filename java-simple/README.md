@@ -16,7 +16,7 @@ src/hybrid/
 ├── description/         building blocks that describe any value (valueDescription.puml)
 │                          ValueDescription, DataType, Unit, RangeDomain, Uncertainty
 ├── variables/           values flowing through a model
-│                          Variable, MlVariable, Port, InternalVariable
+│                          Variable, Port, InternalVariable
 ├── parameters/          constants configuring a model
 │                          Parameter, LearnedParameter, NonTrainableState, Hyperparameter
 ├── mic/                 the generic Model Identity Card classes (exec / sim / ml .puml)
@@ -39,8 +39,7 @@ Port                      exec.puml : named group of port Variables
 
 ValueDescription          valueDescription.puml : name, description, dataType, unit,
 │                           quantityKind, semanticIRI, defaultValue, validityDomain, uncertainty
-├── Variable              port value, IN or OUT
-│   └── MlVariable        + role (inputFeature / target ...)
+├── Variable              port value: IN/OUT + role (controlInput, state, inputFeature, target ...)
 ├── InternalVariable      value computed inside a model
 └── Parameter             constant configuring a model
     ├── LearnedParameter  MLP weights and biases (kind, count, initializer, frozen, storageRef)
@@ -54,11 +53,23 @@ The MLP's weights are ordinary MIC parameters; `MlMIC.forward` computes the netw
 described layers and parameters (dummy values, 3 -> 4 -> 1 instead of the real 3 -> 32 -> 32 -> 1).
 Running the program prints every model's identity card, then the hybrid simulation table.
 
-Run (Java 8+):
+Run (Java 8+) with `./run.sh`, or by hand:
 
 ```sh
-mkdir -p build && javac -d build $(find src -name '*.java')
+mkdir -p build && javac -d build -sourcepath src src/hybrid/Main.java
 java -cp build hybrid.Main
 ```
+
+### Export the Model Identity Cards as JSON
+
+```sh
+./run.sh --json > mic.json
+```
+
+`--json` prints only JSON, without running the simulation. The hybrid card is the top-level
+object; its `physics` and `ml` fields contain the thermal model and residual MLP cards.
+The export includes ports, internal variables, parameters, the solver, and the MLP's layers
+and demo weights. Unspecified metadata is represented as `null`. If already compiled,
+use `java -cp build hybrid.Main --json` directly.
 
 For the full UML-based version (complete MIC classes, wiring validation, JSON export), see `../java`.

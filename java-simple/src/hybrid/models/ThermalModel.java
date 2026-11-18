@@ -38,47 +38,47 @@ public class ThermalModel extends SimMIC {
 
         // 2. Declare the ports (what goes in and what comes out), grouped by where they connect.
         Port heater = port("heater", "Electrical heater feeding the plant");
-        Variable power = heater.add(new Variable("power", "Applied heater power",
-                Variable.InOut.IN, DataType.REAL64, Unit.WATT));
-        power.quantityKind = "Power";
-        power.semanticIRI = "http://qudt.org/vocab/quantitykind/Power";
-        power.defaultValue = 0.0;
-        power.validityDomain = new RangeDomain(0.0, 500.0, "physical", "heater rating");
+        heater.add(new Variable("power", "Applied heater power",
+                Variable.InOut.IN, Variable.Role.controlInput, DataType.REAL64, Unit.WATT)
+                .withQuantityKind("Power")
+                .withSemanticIRI("http://qudt.org/vocab/quantitykind/Power")
+                .withDefault(0.0)
+                .withValidity(new RangeDomain(0.0, 500.0, "physical", "heater rating")));
 
         Port environment = port("environment", "Surroundings the plant loses heat to");
-        Variable ambient = environment.add(new Variable("ambient", "Ambient temperature",
-                Variable.InOut.IN, DataType.REAL64, Unit.DEG_C));
-        ambient.quantityKind = "Temperature";
-        ambient.defaultValue = 20.0;
-        ambient.validityDomain = new RangeDomain(-40.0, 60.0, "operational", "indoor/outdoor conditions");
-        ambient.uncertainty = new Uncertainty("normal", 0.5, "ambient sensor accuracy");
+        environment.add(new Variable("ambient", "Ambient temperature",
+                Variable.InOut.IN, Variable.Role.boundaryCondition, DataType.REAL64, Unit.DEG_C)
+                .withQuantityKind("Temperature")
+                .withDefault(20.0)
+                .withValidity(new RangeDomain(-40.0, 60.0, "operational", "indoor/outdoor conditions"))
+                .withUncertainty(new Uncertainty("normal", 0.5, "ambient sensor accuracy")));
 
         Port thermalOutput = port("thermalOutput", "Temperature of the plant");
-        Variable temperatureOut = thermalOutput.add(new Variable("temperature", "Simulated plant temperature",
-                Variable.InOut.OUT, DataType.REAL64, Unit.DEG_C));
-        temperatureOut.quantityKind = "Temperature";
-        temperatureOut.validityDomain = new RangeDomain(-273.15, null, "physical", "above absolute zero");
+        thermalOutput.add(new Variable("temperature", "Simulated plant temperature",
+                Variable.InOut.OUT, Variable.Role.state, DataType.REAL64, Unit.DEG_C)
+                .withQuantityKind("Temperature")
+                .withValidity(new RangeDomain(-273.15, null, "physical", "above absolute zero")));
 
         // 3. Declare internal variables: values computed inside the model.
-        InternalVariable rate = internal(new InternalVariable("der(temperature)", "Rate of change of the temperature",
-                DataType.REAL64, Unit.KELVIN_PER_SECOND));
-        rate.quantityKind = "TemperatureRate";
+        internal(new InternalVariable("der(temperature)", "Rate of change of the temperature",
+                DataType.REAL64, Unit.KELVIN_PER_SECOND)
+                .withQuantityKind("TemperatureRate"));
 
         // 4. Declare the parameters (same values as in the .mo file).
-        Parameter r = parameter(new Parameter("R", "Thermal resistance to ambient",
-                DataType.REAL64, Unit.KELVIN_PER_WATT, 0.5));
-        r.quantityKind = "ThermalResistance";
-        r.validityDomain = new RangeDomain(0.0, null, "physical", "must be positive");
-        r.uncertainty = new Uncertainty("normal", 0.05, "calibration from measurements");
+        parameter(new Parameter("R", "Thermal resistance to ambient",
+                DataType.REAL64, Unit.KELVIN_PER_WATT, 0.5)
+                .withQuantityKind("ThermalResistance")
+                .withValidity(new RangeDomain(0.0, null, "physical", "must be positive"))
+                .withUncertainty(new Uncertainty("normal", 0.05, "calibration from measurements")));
 
-        Parameter c = parameter(new Parameter("C", "Heat capacity of the plant",
-                DataType.REAL64, Unit.JOULE_PER_KELVIN, 100.0));
-        c.quantityKind = "HeatCapacity";
-        c.validityDomain = new RangeDomain(0.0, null, "physical", "must be positive");
+        parameter(new Parameter("C", "Heat capacity of the plant",
+                DataType.REAL64, Unit.JOULE_PER_KELVIN, 100.0)
+                .withQuantityKind("HeatCapacity")
+                .withValidity(new RangeDomain(0.0, null, "physical", "must be positive")));
 
-        Parameter tStart = parameter(new Parameter("T_start", "Temperature at time 0",
-                DataType.REAL64, Unit.DEG_C, 1000.0));
-        tStart.quantityKind = "Temperature";
+        parameter(new Parameter("T_start", "Temperature at time 0",
+                DataType.REAL64, Unit.DEG_C, 1000.0)
+                .withQuantityKind("Temperature"));
 
         // 5. Initialise the state from the parameter T_start.
         temperature = parameter("T_start").value();

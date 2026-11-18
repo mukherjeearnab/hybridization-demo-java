@@ -34,21 +34,25 @@ public class HybridModel extends ExecMIC {
         // The hybrid model's own ports, as seen from outside (the two sub-models are internal details).
         Port inputs = port("inputs", "Operating conditions");
         inputs.add(new Variable("power", "Applied heater power",
-                Variable.InOut.IN, DataType.REAL64, Unit.WATT)).quantityKind = "Power";
+                Variable.InOut.IN, Variable.Role.controlInput, DataType.REAL64, Unit.WATT)
+                .withQuantityKind("Power"));
         inputs.add(new Variable("ambient_temp", "Ambient temperature",
-                Variable.InOut.IN, DataType.REAL64, Unit.DEG_C)).quantityKind = "Temperature";
+                Variable.InOut.IN, Variable.Role.boundaryCondition, DataType.REAL64, Unit.DEG_C)
+                .withQuantityKind("Temperature"));
 
         Port outputs = port("outputs", "Prediction");
-        Variable tempPred = outputs.add(new Variable("temp_pred", "Hybrid temperature prediction",
-                Variable.InOut.OUT, DataType.REAL64, Unit.DEG_C));
-        tempPred.quantityKind = "Temperature";
-        tempPred.uncertainty = new Uncertainty("normal", 0.3, "dominated by the ML residual error");
+        outputs.add(new Variable("temp_pred", "Hybrid temperature prediction",
+                Variable.InOut.OUT, Variable.Role.prediction, DataType.REAL64, Unit.DEG_C)
+                .withQuantityKind("Temperature")
+                .withUncertainty(new Uncertainty("normal", 0.3, "dominated by the ML residual error")));
 
         // The arrows between the sub-models in the diagram above are the hybrid's internal variables.
         internal(new InternalVariable("temp_sim", "ThermalModel.temperature -> ResidualMLP.temperature_sim",
-                DataType.REAL64, Unit.DEG_C)).quantityKind = "Temperature";
+                DataType.REAL64, Unit.DEG_C)
+                .withQuantityKind("Temperature"));
         internal(new InternalVariable("residual_correction", "ResidualMLP.predicted_residual -> sum",
-                DataType.REAL64, Unit.KELVIN)).quantityKind = "TemperatureDifference";
+                DataType.REAL64, Unit.KELVIN)
+                .withQuantityKind("TemperatureDifference"));
     }
 
     /**

@@ -26,6 +26,18 @@ public class Hyperparameter extends Parameter {
         this.setting = setting;
     }
 
+    // Chained setters for the optional fields (call them BEFORE the inherited with-methods,
+    // because those return a general type).
+    public Hyperparameter withTuned(boolean isTuned) {
+        this.isTuned = isTuned;
+        return this;
+    }
+
+    public Hyperparameter withTuningMethod(String tuningMethod) {
+        this.tuningMethod = tuningMethod;
+        return this;
+    }
+
     @Override
     public String headline() {
         return name + " = " + setting + " - " + description;
